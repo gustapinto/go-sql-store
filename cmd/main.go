@@ -1,10 +1,41 @@
 package main
 
 import (
+	"log"
+
 	gokvstore "github.com/gustapinto/go-kv-store"
 	"github.com/gustapinto/go-sql-store/pkg/ddl"
-	"log"
 )
+
+var exampleDatabase = ddl.Database{
+	Name: "orders",
+}
+var exampleTable = ddl.Table{
+	Name:     "orders_table",
+	Database: exampleDatabase.Name,
+	Columns: []ddl.Column{
+		{
+			Name:     "id",
+			DataType: ddl.ColumnDataTypeInteger,
+			Constraints: []ddl.Constraint{
+				{
+					Type: ddl.ConstraintPrimaryKey,
+					Name: "id_pkey",
+				},
+			},
+		},
+		{
+			Name:     "name",
+			DataType: ddl.ColumnDataTypeText,
+			Constraints: []ddl.Constraint{
+				{
+					Type: ddl.ConstranintUnique,
+					Name: "name_unique",
+				},
+			},
+		},
+	},
+}
 
 func main() {
 	log.Println("Starting application...")
@@ -14,25 +45,15 @@ func main() {
 		panic(err)
 	}
 
-	//if err := ddl.SaveDatabase(root, ddl.DatabaseDefinition{Name: "orders"}); err != nil {
-	//	panic(err)
-	//}
-	//JJ
-	//if err := ddl.SaveTable(root, ddl.TableDefinition{
-	//	Name:     "orders_table",
-	//	Database: "orders",
-	//	Columns: []ddl.ColumnDefinition{
-	//		{
-	//			Name:         "id",
-	//			DataType:     "INTEGER",
-	//			IsPrimaryKey: true,
-	//		},
-	//	},
-	//}); err != nil {
-	//	panic(err)
-	//}
-
-	if err := ddl.DropDatabaseByName(root, "orders"); err != nil {
+	if err := ddl.CreateDatabase(root, exampleDatabase, false, true); err != nil {
 		panic(err)
 	}
+
+	if err := ddl.CreateTable(root, exampleTable, false, true); err != nil {
+		panic(err)
+	}
+
+	// if err := ddl.DropDatabase(root, "orders"); err != nil {
+	// 	panic(err)
+	// }
 }

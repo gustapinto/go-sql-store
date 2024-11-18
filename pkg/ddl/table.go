@@ -1,65 +1,72 @@
 package ddl
 
 import (
-	gokvstore "github.com/gustapinto/go-kv-store"
+	"errors"
 	"strings"
+
+	gokvstore "github.com/gustapinto/go-kv-store"
 )
 
-type ColumnDefinition struct {
-	Name         string
-	DataType     string
-	IsPrimaryKey bool
-}
-
-type TableDefinition struct {
+type Table struct {
 	Name     string
 	Database string
-	Columns  []ColumnDefinition
+	Columns  []Column
 }
 
-func tableQualifiedName(td TableDefinition) string {
+var (
+	ErrTableDoesNotExists = errors.New("table does not exists")
+	ErrTableAlreadyExists = errors.New("table already exists")
+
+	tableCollectionsCache = map[string]*gokvstore.Collection{}
+)
+
+func tableQualifiedName(database, name string) string {
 	builder := strings.Builder{}
-	builder.WriteString(td.Database)
+	builder.WriteString(database)
 	builder.WriteString(".")
-	builder.WriteString(td.Name)
+	builder.WriteString(name)
 
 	return builder.String()
 }
 
-func tableDataDir(td TableDefinition) string {
+func tableDataDir(database, name string) string {
 	builder := strings.Builder{}
 	builder.WriteString("databases/")
-	builder.WriteString(td.Database)
+	builder.WriteString(database)
 	builder.WriteString("/tables/")
-	builder.WriteString(td.Name)
+	builder.WriteString(name)
 
 	return builder.String()
 }
 
-var tableCollectionsCache = map[string]*gokvstore.Collection{}
-
-func tableCollection(rootCollection *gokvstore.Collection, table TableDefinition) (*gokvstore.Collection, error) {
+func tableCollection(rootCollection *gokvstore.Collection, database, name string) (*gokvstore.Collection, error) {
 	if tableCollectionsCache == nil {
 		tableCollectionsCache = map[string]*gokvstore.Collection{}
 	}
 
-	if collection, exists := tableCollectionsCache[tableQualifiedName(table)]; exists {
+	if collection, exists := tableCollectionsCache[tableQualifiedName(database, name)]; exists {
 		return collection, nil
 	}
 
-	newCollection, err := rootCollection.NewCollection(tableDataDir(table))
+	newCollection, err := rootCollection.NewCollection(tableDataDir(database, name))
 	if err != nil {
 		return nil, err
 	}
 
-	tableCollectionsCache[tableQualifiedName(table)] = newCollection
+	tableCollectionsCache[tableQualifiedName(database, name)] = newCollection
 	return newCollection, nil
 }
 
-func CreateTable(rootCollection *gokvstore.Collection, table TableDefinition) error {
-	col, err := tableCollection(rootCollection, table)
+func putTable(rootCollection *gokvstore.Collection, table Table, replace bool) error {
+	tableCollection, err := tableCollection(rootCollection, table.Database, table.Name)
 	if err != nil {
 		return err
+	}
+
+	if replace {
+		if err := tableCollection.Truncate(); err != nil {
+			return err
+		}
 	}
 
 	tableBuffer, err := Encode(table)
@@ -67,9 +74,86 @@ func CreateTable(rootCollection *gokvstore.Collection, table TableDefinition) er
 		return err
 	}
 
-	if err := col.Put(table.Name, tableBuffer, true); err != nil {
+	if err := tableCollection.Put(tableQualifiedName(table.Database, table.Name), tableBuffer, true); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func GetTable(rootCollection *gokvstore.Collection, database, name string) (*Table, error) {
+	tableCollection, err := tableCollection(rootCollection, database, name)
+	if err != nil {
+		return nil, err
+	}
+
+	tableBuffer, err := tableCollection.Get(tableQualifiedName(database, name))
+	if err != nil {
+		if errors.Is(err, gokvstore.ErrKeyNotFound) {
+			return nil, ErrTableDoesNotExists
+		}
+
+		return nil, err
+	}
+
+	table, err := Decode[Table](tableBuffer)
+	if err != nil {
+		return nil, err
+	}
+
+	return &table, nil
+}
+
+func TableExists(rootCollection *gokvstore.Collection, database, name string) (bool, error) {
+	tableCollection, err := tableCollection(rootCollection, database, name)
+	if err != nil {
+		return false, err
+	}
+
+	return tableCollection.Exists(tableQualifiedName(database, name)), nil
+}
+
+func CreateTable(rootCollection *gokvstore.Collection, table Table, createOrReplace, createIfNotExists bool) error {
+	exists, err := TableExists(rootCollection, table.Database, table.Name)
+	if err != nil {
+		return err
+	}
+
+	canIgnoreIfExists := createOrReplace || createIfNotExists
+	if exists && !canIgnoreIfExists {
+		return ErrTableAlreadyExists
+	}
+
+	return putTable(rootCollection, table, createOrReplace)
+}
+
+func AlterTable(rootCollection *gokvstore.Collection, table Table) error {
+	exists, err := TableExists(rootCollection, table.Database, table.Name)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		return ErrTableDoesNotExists
+	}
+
+	return putTable(rootCollection, table, false)
+}
+
+func DropTable(rootCollection *gokvstore.Collection, database, name string) error {
+	exists, err := TableExists(rootCollection, database, name)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		return ErrTableDoesNotExists
+	}
+
+	tableCollection, err := tableCollection(rootCollection, database, name)
+	if err != nil {
+		return err
+	}
+
+	return tableCollection.Truncate()
 }

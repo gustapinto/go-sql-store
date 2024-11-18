@@ -6,9 +6,10 @@ import (
 )
 
 func init() {
-	gob.Register(ColumnDefinition{})
-	gob.Register(TableDefinition{})
-	gob.Register(DatabaseDefinition{})
+	gob.Register(Constraint{})
+	gob.Register(Column{})
+	gob.Register(Table{})
+	gob.Register(Database{})
 }
 
 func Encode[T any](data T) ([]byte, error) {
