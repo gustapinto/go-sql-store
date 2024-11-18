@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	gokvstore "github.com/gustapinto/go-kv-store"
+	"github.com/gustapinto/go-sql-store/pkg/encode"
 )
 
 type Database struct {
@@ -27,7 +28,7 @@ func databaseDataDir(dd Database) string {
 	return builder.String()
 }
 
-func databaseCollection(rootCollection *gokvstore.Collection, database Database) (*gokvstore.Collection, error) {
+func DatabaseCollection(rootCollection *gokvstore.Collection, database Database) (*gokvstore.Collection, error) {
 	if databaseCollectionsCache == nil {
 		databaseCollectionsCache = map[string]*gokvstore.Collection{}
 	}
@@ -46,7 +47,7 @@ func databaseCollection(rootCollection *gokvstore.Collection, database Database)
 }
 
 func putDatabase(rootCollection *gokvstore.Collection, database Database, replace bool) error {
-	databaseCollection, err := databaseCollection(rootCollection, database)
+	databaseCollection, err := DatabaseCollection(rootCollection, database)
 	if err != nil {
 		return err
 	}
@@ -57,7 +58,7 @@ func putDatabase(rootCollection *gokvstore.Collection, database Database, replac
 		}
 	}
 
-	databaseBuffer, err := Encode(database)
+	databaseBuffer, err := encode.Encode(database)
 	if err != nil {
 		return err
 	}
@@ -70,7 +71,7 @@ func putDatabase(rootCollection *gokvstore.Collection, database Database, replac
 }
 
 func GetDatabase(rootCollection *gokvstore.Collection, databaseName string) (*Database, error) {
-	databaseCollection, err := databaseCollection(rootCollection, Database{Name: databaseName})
+	databaseCollection, err := DatabaseCollection(rootCollection, Database{Name: databaseName})
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +85,7 @@ func GetDatabase(rootCollection *gokvstore.Collection, databaseName string) (*Da
 		return nil, err
 	}
 
-	database, err := Decode[Database](databaseBuffer)
+	database, err := encode.Decode[Database](databaseBuffer)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +94,7 @@ func GetDatabase(rootCollection *gokvstore.Collection, databaseName string) (*Da
 }
 
 func DatabaseExists(rootCollection *gokvstore.Collection, database Database) (bool, error) {
-	databaseCollection, err := databaseCollection(rootCollection, database)
+	databaseCollection, err := DatabaseCollection(rootCollection, database)
 	if err != nil {
 		return false, err
 	}
@@ -138,7 +139,7 @@ func DropDatabase(rootCollection *gokvstore.Collection, name string) error {
 		return ErrDatabaseDoesNotExists
 	}
 
-	databaseCollection, err := databaseCollection(rootCollection, Database{Name: name})
+	databaseCollection, err := DatabaseCollection(rootCollection, Database{Name: name})
 	if err != nil {
 		return err
 	}

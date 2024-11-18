@@ -5,6 +5,7 @@ import (
 
 	gokvstore "github.com/gustapinto/go-kv-store"
 	"github.com/gustapinto/go-sql-store/pkg/ddl"
+	"github.com/gustapinto/go-sql-store/pkg/dml"
 )
 
 var exampleDatabase = ddl.Database{
@@ -50,6 +51,21 @@ func main() {
 	}
 
 	if err := ddl.CreateTable(root, exampleTable, false, true); err != nil {
+		panic(err)
+	}
+
+	err = dml.InsertInto(root, dml.Row{
+		Database: "orders",
+		Table:    "orders_table",
+		Columns: []dml.Column{
+			{
+				Name:  "id",
+				IsKey: true,
+				Value: 123,
+			},
+		},
+	})
+	if err != nil {
 		panic(err)
 	}
 

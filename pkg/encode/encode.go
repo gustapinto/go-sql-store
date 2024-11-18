@@ -1,16 +1,9 @@
-package ddl
+package encode
 
 import (
 	"bytes"
 	"encoding/gob"
 )
-
-func init() {
-	gob.Register(Constraint{})
-	gob.Register(Column{})
-	gob.Register(Table{})
-	gob.Register(Database{})
-}
 
 func Encode[T any](data T) ([]byte, error) {
 	var buffer bytes.Buffer

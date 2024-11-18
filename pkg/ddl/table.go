@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	gokvstore "github.com/gustapinto/go-kv-store"
+	"github.com/gustapinto/go-sql-store/pkg/encode"
 )
 
 type Table struct {
@@ -39,26 +40,27 @@ func tableDataDir(database, name string) string {
 	return builder.String()
 }
 
-func tableCollection(rootCollection *gokvstore.Collection, database, name string) (*gokvstore.Collection, error) {
+func TableCollection(rootCollection *gokvstore.Collection, database, name string) (*gokvstore.Collection, error) {
 	if tableCollectionsCache == nil {
 		tableCollectionsCache = map[string]*gokvstore.Collection{}
 	}
 
-	if collection, exists := tableCollectionsCache[tableQualifiedName(database, name)]; exists {
+	dataDir := tableDataDir(database, name)
+	if collection, exists := tableCollectionsCache[dataDir]; exists {
 		return collection, nil
 	}
 
-	newCollection, err := rootCollection.NewCollection(tableDataDir(database, name))
+	newCollection, err := rootCollection.NewCollection(dataDir)
 	if err != nil {
 		return nil, err
 	}
 
-	tableCollectionsCache[tableQualifiedName(database, name)] = newCollection
+	tableCollectionsCache[dataDir] = newCollection
 	return newCollection, nil
 }
 
 func putTable(rootCollection *gokvstore.Collection, table Table, replace bool) error {
-	tableCollection, err := tableCollection(rootCollection, table.Database, table.Name)
+	tableCollection, err := TableCollection(rootCollection, table.Database, table.Name)
 	if err != nil {
 		return err
 	}
@@ -69,7 +71,7 @@ func putTable(rootCollection *gokvstore.Collection, table Table, replace bool) e
 		}
 	}
 
-	tableBuffer, err := Encode(table)
+	tableBuffer, err := encode.Encode(table)
 	if err != nil {
 		return err
 	}
@@ -82,7 +84,7 @@ func putTable(rootCollection *gokvstore.Collection, table Table, replace bool) e
 }
 
 func GetTable(rootCollection *gokvstore.Collection, database, name string) (*Table, error) {
-	tableCollection, err := tableCollection(rootCollection, database, name)
+	tableCollection, err := TableCollection(rootCollection, database, name)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +98,7 @@ func GetTable(rootCollection *gokvstore.Collection, database, name string) (*Tab
 		return nil, err
 	}
 
-	table, err := Decode[Table](tableBuffer)
+	table, err := encode.Decode[Table](tableBuffer)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +107,7 @@ func GetTable(rootCollection *gokvstore.Collection, database, name string) (*Tab
 }
 
 func TableExists(rootCollection *gokvstore.Collection, database, name string) (bool, error) {
-	tableCollection, err := tableCollection(rootCollection, database, name)
+	tableCollection, err := TableCollection(rootCollection, database, name)
 	if err != nil {
 		return false, err
 	}
@@ -150,7 +152,7 @@ func DropTable(rootCollection *gokvstore.Collection, database, name string) erro
 		return ErrTableDoesNotExists
 	}
 
-	tableCollection, err := tableCollection(rootCollection, database, name)
+	tableCollection, err := TableCollection(rootCollection, database, name)
 	if err != nil {
 		return err
 	}
