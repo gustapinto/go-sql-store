@@ -4,8 +4,8 @@ import (
 	"log"
 
 	gokvstore "github.com/gustapinto/go-kv-store"
-	"github.com/gustapinto/go-sql-store/pkg/ddl"
-	"github.com/gustapinto/go-sql-store/pkg/dml"
+	"github.com/gustapinto/go-sql-store/pkg/operators/ddl"
+	"github.com/gustapinto/go-sql-store/pkg/operators/dml"
 )
 
 var exampleDatabase = ddl.Database{
