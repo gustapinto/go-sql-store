@@ -30,7 +30,7 @@ var exampleTable = ddl.Table{
 			DataType: ddl.ColumnDataTypeText,
 			Constraints: []ddl.Constraint{
 				{
-					Type: ddl.ConstranintUnique,
+					Type: ddl.ConstraintUnique,
 					Name: "name_unique",
 				},
 			},

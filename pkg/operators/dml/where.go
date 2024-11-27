@@ -2,48 +2,29 @@ package dml
 
 import (
 	"errors"
+	"fmt"
+	"github.com/gustapinto/go-sql-store/pkg/operators/ddl"
 	"strings"
 )
 
 type WhereFunc func(row Row, column string, value any) (bool, error)
 
 var (
-	ErrColumnNotFound                       = errors.New("column not found")
-	ErrCannotCompareWithMismatchingDataType = errors.New("cannot compare if values are equal on columns with mismatching data types")
-	ErrInvalidDataType                      = errors.New("invalid data type")
+	ErrColumnNotFound  = errors.New("column not found")
+	ErrInvalidDataType = errors.New("invalid data type")
 )
 
 func WhereColumnEquals(row Row, column string, value any) (bool, error) {
 	for _, c := range row.Columns {
-		if strings.ToUpper(c.Name) != strings.ToUpper(column) {
+		if strings.ToUpper(c.Definition.Name) != strings.ToUpper(column) {
 			continue
 		}
 
-		switch filterValue := value.(type) {
-		case int64:
-			columnValue, ok := c.Value.(int64)
-			if !ok {
-				return false, ErrCannotCompareWithMismatchingDataType
-			}
-
-			return filterValue == columnValue, nil
-		case float64:
-			columnValue, ok := c.Value.(float64)
-			if !ok {
-				return false, ErrCannotCompareWithMismatchingDataType
-			}
-
-			return filterValue == columnValue, nil
-		case string:
-			columnValue, ok := c.Value.(string)
-			if !ok {
-				return false, ErrCannotCompareWithMismatchingDataType
-			}
-
-			return filterValue == columnValue, nil
-		default:
+		if !ddl.ValueHasCorrectTypeForColumn(value, c.Definition) {
 			return false, ErrInvalidDataType
 		}
+
+		return fmt.Sprint(value) == fmt.Sprint(c.Value), nil
 	}
 
 	return false, ErrColumnNotFound

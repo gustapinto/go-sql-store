@@ -53,22 +53,22 @@ func shouldUpdateRow(row Row, filters []Filter) (bool, error) {
 	return shouldUpdate, nil
 }
 
-func UpdateFrom(rootCollection *gokvstore.Collection, originalRow Row, columnsToBeUpdated map[string]any, filters []Filter) (int64, error) {
+func UpdateFrom(rootCollection *gokvstore.Collection, originalRow Row, columnsToBeUpdated map[string]any, filters []Filter) ([]Row, error) {
 	rowCollection, err := RowCollection(rootCollection, originalRow.Database, originalRow.Table)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	rowsUpdated := int64(0)
+	var updatedRows []Row
 	for key := range rowCollection.Keys() {
 		rowBuffer, err := rootCollection.Get(key)
 		if err != nil {
-			return rowsUpdated, nil
+			return nil, nil
 		}
 
 		row, err := encode.Decode[Row](rowBuffer)
 		if err != nil {
-			return rowsUpdated, err
+			return nil, err
 		}
 
 		shouldUpdate, err := shouldUpdateRow(row, filters)
@@ -76,28 +76,32 @@ func UpdateFrom(rootCollection *gokvstore.Collection, originalRow Row, columnsTo
 			continue
 		}
 
-		newRow := originalRow
+		newRow := Row{
+			Database: originalRow.Database,
+			Table:    originalRow.Table,
+			Columns:  make([]Column, len(originalRow.Columns)),
+		}
 		for i, column := range newRow.Columns {
-			value, exists := columnsToBeUpdated[strings.ToUpper(column.Name)]
+			value, exists := columnsToBeUpdated[strings.ToUpper(column.Definition.Name)]
 			if exists {
 				newRow.Columns[i] = Column{
-					Name:  column.Name,
-					IsKey: column.IsKey,
-					Value: value,
+					Definition: column.Definition,
+					Value:      value,
 				}
 			}
 		}
 
 		newRowBuffer, err := encode.Encode(newRow)
 		if err != nil {
-			return rowsUpdated, err
+			return nil, err
 		}
 
 		if err := rowCollection.Put(key, newRowBuffer, false); err != nil {
-			return rowsUpdated, err
+			return nil, err
 		}
-		rowsUpdated++
+
+		updatedRows = append(updatedRows, newRow)
 	}
 
-	return rowsUpdated, nil
+	return updatedRows, nil
 }

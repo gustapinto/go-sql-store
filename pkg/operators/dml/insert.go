@@ -14,7 +14,7 @@ func InsertInto(rootCollection *gokvstore.Collection, row Row) error {
 	}
 
 	for i, column := range row.Columns {
-		row.Columns[i].Name = strings.ToUpper(column.Name)
+		row.Columns[i].Definition.Name = strings.ToUpper(column.Definition.Name)
 	}
 
 	rowCollection, err := RowCollection(rootCollection, row.Database, row.Table)

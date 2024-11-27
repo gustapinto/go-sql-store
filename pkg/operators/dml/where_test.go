@@ -1,6 +1,8 @@
 package dml
 
 import (
+	"errors"
+	"github.com/gustapinto/go-sql-store/pkg/operators/ddl"
 	"testing"
 	"time"
 )
@@ -21,7 +23,10 @@ func TestWhereColumnEquals(t *testing.T) {
 			row: Row{
 				Columns: []Column{
 					{
-						Name:  "NAME",
+						Definition: ddl.Column{
+							Name:     "NAME",
+							DataType: ddl.ColumnDataTypeText,
+						},
 						Value: "Foo",
 					},
 				},
@@ -36,11 +41,17 @@ func TestWhereColumnEquals(t *testing.T) {
 			row: Row{
 				Columns: []Column{
 					{
-						Name:  "NAME",
+						Definition: ddl.Column{
+							Name:     "NAME",
+							DataType: ddl.ColumnDataTypeText,
+						},
 						Value: "Foo",
 					},
 					{
-						Name:  "VALUE",
+						Definition: ddl.Column{
+							Name:     "VALUE",
+							DataType: ddl.ColumnDataTypeFloat,
+						},
 						Value: float64(10.0),
 					},
 				},
@@ -55,8 +66,16 @@ func TestWhereColumnEquals(t *testing.T) {
 			row: Row{
 				Columns: []Column{
 					{
-						Name:  "ID",
-						IsKey: true,
+						Definition: ddl.Column{
+							Name:     "ID",
+							DataType: ddl.ColumnDataTypeInteger,
+							Constraints: []ddl.Constraint{
+								{
+									Type: ddl.ConstraintPrimaryKey,
+									Name: "id_pk",
+								},
+							},
+						},
 						Value: int64(123),
 					},
 				},
@@ -65,20 +84,28 @@ func TestWhereColumnEquals(t *testing.T) {
 			expectedError: ErrColumnNotFound,
 		},
 		{
-			name:   "should return ErrCannotCompareWithMismatchingDataType when value and column types does not matches",
+			name:   "should return ErrInvalidDataType when value and column types does not matches",
 			column: "id",
 			value:  float64(123),
 			row: Row{
 				Columns: []Column{
 					{
-						Name:  "ID",
-						IsKey: true,
+						Definition: ddl.Column{
+							Name:     "ID",
+							DataType: ddl.ColumnDataTypeInteger,
+							Constraints: []ddl.Constraint{
+								{
+									Type: ddl.ConstraintPrimaryKey,
+									Name: "id_pk",
+								},
+							},
+						},
 						Value: int64(123),
 					},
 				},
 			},
 			expectedValue: false,
-			expectedError: ErrCannotCompareWithMismatchingDataType,
+			expectedError: ErrInvalidDataType,
 		},
 		{
 			name:   "should return ErrInvalidDataType when value type is not supported",
@@ -87,9 +114,11 @@ func TestWhereColumnEquals(t *testing.T) {
 			row: Row{
 				Columns: []Column{
 					{
-						Name:  "TIMESTAMP",
-						IsKey: true,
-						Value: int64(time.Now().UnixMilli()),
+						Definition: ddl.Column{
+							Name:     "TIMESTAMP",
+							DataType: ddl.ColumnDataTypeTimestamp,
+						},
+						Value: time.Now().UnixMilli(),
 					},
 				},
 			},
@@ -101,7 +130,7 @@ func TestWhereColumnEquals(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			value, err := WhereColumnEquals(testCase.row, testCase.column, testCase.value)
-			if err != testCase.expectedError {
+			if !errors.Is(err, testCase.expectedError) {
 				t.Errorf("expected to error with %s, got %s", testCase.expectedError, err)
 				return
 			}
