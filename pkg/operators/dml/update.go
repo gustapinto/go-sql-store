@@ -61,9 +61,9 @@ func UpdateFrom(rootCollection *gokvstore.Collection, originalRow Row, columnsTo
 
 	var updatedRows []Row
 	for key := range rowCollection.Keys() {
-		rowBuffer, err := rootCollection.Get(key)
+		rowBuffer, err := rowCollection.Get(key)
 		if err != nil {
-			return nil, nil
+			return nil, err
 		}
 
 		row, err := encode.Decode[Row](rowBuffer)
@@ -76,22 +76,14 @@ func UpdateFrom(rootCollection *gokvstore.Collection, originalRow Row, columnsTo
 			continue
 		}
 
-		newRow := Row{
-			Database: originalRow.Database,
-			Table:    originalRow.Table,
-			Columns:  make([]Column, len(originalRow.Columns)),
-		}
-		for i, column := range newRow.Columns {
+		for i, column := range originalRow.Columns {
 			value, exists := columnsToBeUpdated[strings.ToUpper(column.Definition.Name)]
 			if exists {
-				newRow.Columns[i] = Column{
-					Definition: column.Definition,
-					Value:      value,
-				}
+				originalRow.Columns[i].Value = value
 			}
 		}
 
-		newRowBuffer, err := encode.Encode(newRow)
+		newRowBuffer, err := encode.Encode(originalRow)
 		if err != nil {
 			return nil, err
 		}
@@ -100,7 +92,7 @@ func UpdateFrom(rootCollection *gokvstore.Collection, originalRow Row, columnsTo
 			return nil, err
 		}
 
-		updatedRows = append(updatedRows, newRow)
+		updatedRows = append(updatedRows, originalRow)
 	}
 
 	return updatedRows, nil

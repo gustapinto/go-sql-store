@@ -1,11 +1,13 @@
 package dml
 
 import (
+	"os"
+	"slices"
+	"testing"
+
 	gokvstore "github.com/gustapinto/go-kv-store"
 	"github.com/gustapinto/go-sql-store/pkg/encode"
 	"github.com/gustapinto/go-sql-store/pkg/operators/ddl"
-	"slices"
-	"testing"
 )
 
 func TestShouldUpdateRow(t *testing.T) {
@@ -227,6 +229,8 @@ func TestShouldUpdateRow(t *testing.T) {
 
 func TestUpdateFrom(t *testing.T) {
 	mockedOriginalRow := Row{
+		Table:    "FOO_TABLE",
+		Database: "FOO_DB",
 		Columns: []Column{
 			{
 				Definition: ddl.Column{
@@ -251,9 +255,13 @@ func TestUpdateFrom(t *testing.T) {
 		},
 	}
 	mockedCollection := func() *gokvstore.Collection {
-		collection, _ := gokvstore.NewCollection(gokvstore.NewInMemoryStore())
-		rowBuffer, _ := encode.Encode(mockedOriginalRow)
-		_ = collection.Put("FOO", rowBuffer, false)
+		collection, err := gokvstore.NewCollection(gokvstore.NewFsRecordStore(os.TempDir()))
+		_ = err
+		rowCollection, err2 := RowCollection(collection, mockedOriginalRow.Database, mockedOriginalRow.Table)
+		_ = err2
+		rowBuffer, err3 := encode.Encode(mockedOriginalRow)
+		_ = err3
+		_ = rowCollection.Put("FOO", rowBuffer, false)
 
 		return collection
 	}
@@ -298,7 +306,7 @@ func TestUpdateFrom(t *testing.T) {
 									},
 								},
 							},
-							Value: "FOO",
+							Value: "FOOBAR",
 						},
 						{
 							Definition: ddl.Column{
