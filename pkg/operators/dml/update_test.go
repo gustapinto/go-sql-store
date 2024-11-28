@@ -227,6 +227,29 @@ func TestShouldUpdateRow(t *testing.T) {
 	}
 }
 
+func mockRootCollection(row Row) (*gokvstore.Collection, error) {
+	collection, err := gokvstore.NewCollection(gokvstore.NewFsRecordStore(os.TempDir()))
+	if err != nil {
+		return nil, err
+	}
+
+	rowCollection, err := RowCollection(collection, row.Database, row.Table)
+	if err != nil {
+		return nil, err
+	}
+
+	rowBuffer, err := encode.Encode(row)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := rowCollection.Put("FOO", rowBuffer, false); err != nil {
+		return nil, err
+	}
+
+	return collection, nil
+}
+
 func TestUpdateFrom(t *testing.T) {
 	mockedOriginalRow := Row{
 		Table:    "FOO_TABLE",
@@ -254,21 +277,9 @@ func TestUpdateFrom(t *testing.T) {
 			},
 		},
 	}
-	mockedCollection := func() *gokvstore.Collection {
-		collection, err := gokvstore.NewCollection(gokvstore.NewFsRecordStore(os.TempDir()))
-		_ = err
-		rowCollection, err2 := RowCollection(collection, mockedOriginalRow.Database, mockedOriginalRow.Table)
-		_ = err2
-		rowBuffer, err3 := encode.Encode(mockedOriginalRow)
-		_ = err3
-		_ = rowCollection.Put("FOO", rowBuffer, false)
-
-		return collection
-	}
 
 	testCases := []struct {
 		name                string
-		rootCollection      *gokvstore.Collection
 		originalRow         Row
 		columnsToBeUpdated  map[string]any
 		filters             []Filter
@@ -276,9 +287,8 @@ func TestUpdateFrom(t *testing.T) {
 		expectedError       error
 	}{
 		{
-			name:           "should update row with filter",
-			rootCollection: mockedCollection(),
-			originalRow:    mockedOriginalRow,
+			name:        "should update row with filter",
+			originalRow: mockedOriginalRow,
 			columnsToBeUpdated: map[string]any{
 				"NAME": "FOOBAR",
 			},
@@ -320,11 +330,40 @@ func TestUpdateFrom(t *testing.T) {
 			},
 			expectedError: nil,
 		},
+		{
+			name:        "should not update row when filter does not matches",
+			originalRow: mockedOriginalRow,
+			columnsToBeUpdated: map[string]any{
+				"NAME": "FOOBAR",
+			},
+			filters: []Filter{
+				{
+					Column:  "NAME",
+					Operand: FilterOperandAnd,
+					Where:   WhereColumnEquals,
+					Value:   "FOO",
+				},
+				{
+					Column:  "DESCRIPTION",
+					Operand: FilterOperandAnd,
+					Where:   WhereColumnEquals,
+					Value:   "FOO",
+				},
+			},
+			expectedUpdatedRows: []Row{},
+			expectedError:       nil,
+		},
 	}
 
 	for _, testCase := range testCases {
+		rootCollection, err := mockRootCollection(mockedOriginalRow)
+		if err != nil {
+			t.Errorf("not expected error when mocking root collection, got %s", err)
+			return
+		}
+
 		t.Run(testCase.name, func(t *testing.T) {
-			actual, err := UpdateFrom(testCase.rootCollection, testCase.originalRow, testCase.columnsToBeUpdated, testCase.filters)
+			actual, err := UpdateFrom(rootCollection, testCase.originalRow, testCase.columnsToBeUpdated, testCase.filters)
 			if err != nil {
 				t.Errorf("not expected error, got %s", err)
 				return
@@ -335,6 +374,116 @@ func TestUpdateFrom(t *testing.T) {
 				return
 			}
 
+		})
+	}
+}
+
+func TestUpdateFromByPrimaryKey(t *testing.T) {
+	mockedOriginalRow := Row{
+		Table:    "FOO_TABLE",
+		Database: "FOO_DB",
+		Columns: []Column{
+			{
+				Definition: ddl.Column{
+					Name:     "NAME",
+					DataType: ddl.ColumnDataTypeText,
+					Constraints: []ddl.Constraint{
+						{
+							Type: ddl.ConstraintPrimaryKey,
+							Name: "name_pk",
+						},
+					},
+				},
+				Value: "FOO",
+			},
+			{
+				Definition: ddl.Column{
+					Name:     "DESCRIPTION",
+					DataType: ddl.ColumnDataTypeText,
+				},
+				Value: "BAR",
+			},
+		},
+	}
+
+	testCases := []struct {
+		name               string
+		originalRow        Row
+		columnsToBeUpdated map[string]any
+		primaryKey         string
+		expectedUpdatedRow *Row
+		expectedError      error
+	}{
+		{
+			name:        "should update row with filter",
+			originalRow: mockedOriginalRow,
+			columnsToBeUpdated: map[string]any{
+				"NAME": "FOOBAR",
+			},
+			primaryKey: "FOO",
+			expectedUpdatedRow: &Row{
+				Database: mockedOriginalRow.Database,
+				Table:    mockedOriginalRow.Table,
+				Columns: []Column{
+					{
+						Definition: ddl.Column{
+							Name:     "NAME",
+							DataType: ddl.ColumnDataTypeText,
+							Constraints: []ddl.Constraint{
+								{
+									Type: ddl.ConstraintPrimaryKey,
+									Name: "name_pk",
+								},
+							},
+						},
+						Value: "FOOBAR",
+					},
+					{
+						Definition: ddl.Column{
+							Name:     "DESCRIPTION",
+							DataType: ddl.ColumnDataTypeText,
+						},
+						Value: "BAR",
+					},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name:        "should not update row when filter does not matches",
+			originalRow: mockedOriginalRow,
+			columnsToBeUpdated: map[string]any{
+				"NAME": "FOOBAR",
+			},
+			primaryKey:         "FOOBAR",
+			expectedUpdatedRow: nil,
+			expectedError:      nil,
+		},
+	}
+
+	for _, testCase := range testCases {
+		rootCollection, err := mockRootCollection(mockedOriginalRow)
+		if err != nil {
+			t.Errorf("not expected error when mocking root collection, got %s", err)
+			return
+		}
+
+		t.Run(testCase.name, func(t *testing.T) {
+			actual, err := UpdateFromByPrimaryKey(rootCollection, testCase.originalRow, testCase.columnsToBeUpdated, testCase.primaryKey)
+			if err != nil {
+				t.Errorf("not expected error, got %s", err)
+				return
+			}
+
+			if actual == nil && testCase.expectedUpdatedRow != nil {
+				t.Errorf("expected value %v, got <nil>", testCase.expectedUpdatedRow)
+				return
+			}
+
+			if !AreRowsEqual(*actual, *testCase.expectedUpdatedRow) {
+				t.Errorf("expected value %v, got %v", testCase.expectedUpdatedRow, actual)
+				return
+			}
 		})
 	}
 }

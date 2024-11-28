@@ -97,3 +97,28 @@ func UpdateFrom(rootCollection *gokvstore.Collection, originalRow Row, columnsTo
 
 	return updatedRows, nil
 }
+
+func UpdateFromByPrimaryKey(rootCollection *gokvstore.Collection, originalRow Row, columnsToBeUpdated map[string]any, primaryKeyValue string) (*Row, error) {
+	rowCollection, err := RowCollection(rootCollection, originalRow.Database, originalRow.Table)
+	if err != nil {
+		return nil, err
+	}
+
+	for i, column := range originalRow.Columns {
+		value, exists := columnsToBeUpdated[strings.ToUpper(column.Definition.Name)]
+		if exists {
+			originalRow.Columns[i].Value = value
+		}
+	}
+
+	newRowBuffer, err := encode.Encode(originalRow)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := rowCollection.Put(primaryKeyValue, newRowBuffer, false); err != nil {
+		return nil, err
+	}
+
+	return &originalRow, nil
+}
