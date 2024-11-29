@@ -11,18 +11,20 @@ import (
 
 type WhereFunc func(row dml.Row, column string, value any) (bool, error)
 
+type FilterOperand string
+
 type Filter struct {
 	Column  string
-	Operand string
+	Operand FilterOperand
 	Where   WhereFunc
 	Value   any
 }
 
 var (
-	FilterOperandOr     = "OR"
-	FilterOperandOrNot  = "OR NOT"
-	FilterOperandAnd    = "AND"
-	FilterOperandAndNot = "AND NOT"
+	FilterOperandOr     FilterOperand = "OR"
+	FilterOperandOrNot  FilterOperand = "OR NOT"
+	FilterOperandAnd    FilterOperand = "AND"
+	FilterOperandAndNot FilterOperand = "AND NOT"
 )
 
 var (

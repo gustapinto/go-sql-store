@@ -13,7 +13,7 @@ func Update(rootCollection *gokvstore.Collection, originalRow Row, columnsToBeUp
 		return false, err
 	}
 
-	primaryKey, err := primaryKeyForRow(originalRow)
+	primaryKey, err := PrimaryKeyForRow(originalRow)
 	if err != nil {
 		return false, err
 	}

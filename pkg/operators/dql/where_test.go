@@ -2,10 +2,11 @@ package dql
 
 import (
 	"errors"
-	"github.com/gustapinto/go-sql-store/pkg/operators/ddl"
-	"github.com/gustapinto/go-sql-store/pkg/operators/dml"
 	"testing"
 	"time"
+
+	"github.com/gustapinto/go-sql-store/pkg/operators/ddl"
+	"github.com/gustapinto/go-sql-store/pkg/operators/dml"
 )
 
 func TestWhereColumnEquals(t *testing.T) {

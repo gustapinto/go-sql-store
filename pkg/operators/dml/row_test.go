@@ -233,7 +233,7 @@ func TestPrimaryKeyForRow(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			value, err := primaryKeyForRow(testCase.row)
+			value, err := PrimaryKeyForRow(testCase.row)
 			if !errors.Is(err, testCase.expectedError) {
 				t.Errorf("expected to error with %s, got %s", testCase.expectedError, err)
 				return

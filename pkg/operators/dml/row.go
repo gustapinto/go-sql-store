@@ -63,7 +63,7 @@ func RowCollection(rootCollection *gokvstore.Collection, database, table string)
 	return rootCollection.NewCollection(dataDir)
 }
 
-func primaryKeyForRow(row Row) (string, error) {
+func PrimaryKeyForRow(row Row) (string, error) {
 	for _, column := range row.Columns {
 		if ddl.ColumnIsPrimaryKey(column.Definition) {
 			return fmt.Sprintf("%v", column.Value), nil

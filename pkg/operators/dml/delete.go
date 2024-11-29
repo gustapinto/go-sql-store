@@ -8,7 +8,7 @@ func Delete(rootCollection *gokvstore.Collection, row Row) error {
 		return err
 	}
 
-	primaryKey, err := primaryKeyForRow(row)
+	primaryKey, err := PrimaryKeyForRow(row)
 	if err != nil {
 		return err
 	}

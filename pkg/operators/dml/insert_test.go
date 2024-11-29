@@ -120,7 +120,7 @@ func TestInsert(t *testing.T) {
 
 		t.Run(testCase.name, func(t *testing.T) {
 			if err := Insert(rootCollection, testCase.row); !errors.Is(err, testCase.expectedError) {
-				t.Errorf("not expected error, got %s", err)
+				t.Errorf("expected %s error, got %s", testCase.expectedError.Error(), err.Error())
 				return
 			}
 

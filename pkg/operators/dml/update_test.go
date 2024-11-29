@@ -98,7 +98,7 @@ func TestUpdate(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			actual, err := Update(rootCollection, testCase.originalRow, testCase.columnsToBeUpdated)
 			if err != nil {
-				t.Errorf("not expected error, got %s", err)
+				t.Errorf("expected %s error, got %s", testCase.expectedError.Error(), err.Error())
 				return
 			}
 

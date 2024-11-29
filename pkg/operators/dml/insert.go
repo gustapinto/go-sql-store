@@ -13,7 +13,7 @@ var (
 )
 
 func Insert(rootCollection *gokvstore.Collection, row Row) error {
-	primaryKey, err := primaryKeyForRow(row)
+	primaryKey, err := PrimaryKeyForRow(row)
 	if err != nil {
 		return err
 	}
