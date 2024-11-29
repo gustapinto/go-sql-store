@@ -3,7 +3,8 @@ package ddl
 import (
 	"fmt"
 	"slices"
-	"strings"
+
+	"github.com/gustapinto/go-sql-store/pkg/utils/stringutils"
 )
 
 type ColumnDataType string
@@ -34,12 +35,12 @@ const (
 
 func AreConstraintsEqual(c1, c2 Constraint) bool {
 	return c1.Type == c2.Type &&
-		strings.ToUpper(c1.Name) == strings.ToUpper(c2.Name) &&
+		stringutils.EqualsIgnoreCase(c1.Name, c2.Name) &&
 		fmt.Sprint(c1.Value) == fmt.Sprint(c2.Value)
 }
 
 func AreColumnsEqual(c1, c2 Column) bool {
-	if strings.ToUpper(c1.Name) != strings.ToUpper(c2.Name) || c1.DataType != c2.DataType {
+	if !stringutils.EqualsIgnoreCase(c1.Name, c2.Name) || c1.DataType != c2.DataType {
 		return false
 	}
 
