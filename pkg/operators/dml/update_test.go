@@ -93,6 +93,7 @@ func TestUpdate(t *testing.T) {
 			t.Errorf("not expected error when mocking root collection, got %s", err)
 			return
 		}
+		defer rootCollection.Truncate()
 
 		t.Run(testCase.name, func(t *testing.T) {
 			actual, err := Update(rootCollection, testCase.originalRow, testCase.columnsToBeUpdated)

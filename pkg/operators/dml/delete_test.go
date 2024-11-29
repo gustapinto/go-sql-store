@@ -99,6 +99,7 @@ func TestDelete(t *testing.T) {
 			t.Errorf("not expected error when mocking root collection, got %s", err)
 			return
 		}
+		defer rootCollection.Truncate()
 
 		t.Run(testCase.name, func(t *testing.T) {
 			if err := Delete(rootCollection, testCase.row); !errors.Is(err, testCase.expectedError) {
@@ -111,6 +112,7 @@ func TestDelete(t *testing.T) {
 				t.Errorf("not expected error when retrieving row collection, got %s", err)
 				return
 			}
+			defer rowCollection.Truncate()
 
 			if exists := rowCollection.Exists(testCase.primaryKey); exists {
 				t.Errorf("expected deleted row to not exist in the row collection")

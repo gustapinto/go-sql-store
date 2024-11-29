@@ -1,10 +1,15 @@
 package dml
 
 import (
+	"errors"
 	"strings"
 
 	gokvstore "github.com/gustapinto/go-kv-store"
 	"github.com/gustapinto/go-sql-store/pkg/utils/encodingutils"
+)
+
+var (
+	ErrPrimaryKeyAlreadyExists = errors.New("primary key already exists in database")
 )
 
 func Insert(rootCollection *gokvstore.Collection, row Row) error {
@@ -20,6 +25,10 @@ func Insert(rootCollection *gokvstore.Collection, row Row) error {
 	rowCollection, err := RowCollection(rootCollection, row.Database, row.Table)
 	if err != nil {
 		return err
+	}
+
+	if exists := rowCollection.Exists(primaryKey); exists {
+		return ErrPrimaryKeyAlreadyExists
 	}
 
 	rowBuffer, err := encodingutils.Encode(row)
