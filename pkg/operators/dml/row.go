@@ -3,9 +3,11 @@ package dml
 import (
 	"errors"
 	"fmt"
-	"github.com/gustapinto/go-sql-store/pkg/operators/ddl"
 	"slices"
 	"strings"
+
+	"github.com/gustapinto/go-sql-store/pkg/operators/ddl"
+	"github.com/gustapinto/go-sql-store/pkg/utils/stringutils"
 
 	gokvstore "github.com/gustapinto/go-kv-store"
 )
@@ -22,7 +24,7 @@ type Row struct {
 }
 
 var (
-	ErrRowWithoutKey = errors.New("cannot insert row without a key")
+	ErrRowWithoutPrimaryKey = errors.New("row does not have a primary key")
 )
 
 func AreColumnsEqual(c1, c2 Column) bool {
@@ -34,8 +36,8 @@ func AreColumnsEqual(c1, c2 Column) bool {
 }
 
 func AreRowsEqual(r1, r2 Row) bool {
-	if strings.ToUpper(r1.Database) != strings.ToUpper(r2.Database) ||
-		strings.ToUpper(r1.Table) != strings.ToUpper(r2.Table) ||
+	if !stringutils.EqualsIgnoreCase(r1.Database, r2.Database) ||
+		!stringutils.EqualsIgnoreCase(r1.Table, r2.Table) ||
 		len(r1.Columns) != len(r2.Columns) {
 
 		return false
@@ -61,12 +63,12 @@ func RowCollection(rootCollection *gokvstore.Collection, database, table string)
 	return rootCollection.NewCollection(dataDir)
 }
 
-func keyForRow(row Row) (string, error) {
+func primaryKeyForRow(row Row) (string, error) {
 	for _, column := range row.Columns {
-		if ddl.ColumnIsKey(column.Definition) {
+		if ddl.ColumnIsPrimaryKey(column.Definition) {
 			return fmt.Sprintf("%v", column.Value), nil
 		}
 	}
 
-	return "", ErrRowWithoutKey
+	return "", ErrRowWithoutPrimaryKey
 }

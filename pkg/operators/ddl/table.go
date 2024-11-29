@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	gokvstore "github.com/gustapinto/go-kv-store"
-	"github.com/gustapinto/go-sql-store/pkg/encode"
+	"github.com/gustapinto/go-sql-store/pkg/utils/encodingutils"
 )
 
 type Table struct {
@@ -71,7 +71,7 @@ func putTable(rootCollection *gokvstore.Collection, table Table, replace bool) e
 		}
 	}
 
-	tableBuffer, err := encode.Encode(table)
+	tableBuffer, err := encodingutils.Encode(table)
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func GetTable(rootCollection *gokvstore.Collection, database, name string) (*Tab
 		return nil, err
 	}
 
-	table, err := encode.Decode[Table](tableBuffer)
+	table, err := encodingutils.Decode[Table](tableBuffer)
 	if err != nil {
 		return nil, err
 	}

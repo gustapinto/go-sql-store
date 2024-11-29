@@ -1,4 +1,7 @@
 test:
+	go test -count=1 ./...
+
+test/verbose:
 	go test -v -count=1 ./...
 
 run:

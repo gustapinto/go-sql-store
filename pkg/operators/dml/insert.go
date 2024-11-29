@@ -4,11 +4,11 @@ import (
 	"strings"
 
 	gokvstore "github.com/gustapinto/go-kv-store"
-	"github.com/gustapinto/go-sql-store/pkg/encode"
+	"github.com/gustapinto/go-sql-store/pkg/utils/encodingutils"
 )
 
-func InsertInto(rootCollection *gokvstore.Collection, row Row) error {
-	key, err := keyForRow(row)
+func Insert(rootCollection *gokvstore.Collection, row Row) error {
+	primaryKey, err := primaryKeyForRow(row)
 	if err != nil {
 		return err
 	}
@@ -22,10 +22,10 @@ func InsertInto(rootCollection *gokvstore.Collection, row Row) error {
 		return err
 	}
 
-	rowBuffer, err := encode.Encode(row)
+	rowBuffer, err := encodingutils.Encode(row)
 	if err != nil {
 		return err
 	}
 
-	return rowCollection.Put(key, rowBuffer, false)
+	return rowCollection.Put(primaryKey, rowBuffer, false)
 }

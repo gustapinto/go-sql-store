@@ -46,7 +46,7 @@ func AreColumnsEqual(c1, c2 Column) bool {
 	return slices.EqualFunc(c1.Constraints, c2.Constraints, AreConstraintsEqual)
 }
 
-func ColumnIsKey(column Column) bool {
+func ColumnIsPrimaryKey(column Column) bool {
 	if len(column.Constraints) == 0 {
 		return false
 	}

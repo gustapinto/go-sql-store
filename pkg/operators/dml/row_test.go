@@ -2,8 +2,9 @@ package dml
 
 import (
 	"errors"
-	"github.com/gustapinto/go-sql-store/pkg/operators/ddl"
 	"testing"
+
+	"github.com/gustapinto/go-sql-store/pkg/operators/ddl"
 )
 
 func TestAreColumnsEqual(t *testing.T) {
@@ -168,7 +169,7 @@ func TestAreRowsEqual(t *testing.T) {
 	}
 }
 
-func TestKeyForRow(t *testing.T) {
+func TestPrimaryKeyForRow(t *testing.T) {
 	testCases := []struct {
 		name          string
 		row           Row
@@ -189,7 +190,7 @@ func TestKeyForRow(t *testing.T) {
 				},
 			},
 			expectedValue: "",
-			expectedError: ErrRowWithoutKey,
+			expectedError: ErrRowWithoutPrimaryKey,
 		},
 		{
 			name: "should return ErrRowWithoutKey on a Row without columns",
@@ -197,7 +198,7 @@ func TestKeyForRow(t *testing.T) {
 				Columns: []Column{},
 			},
 			expectedValue: "",
-			expectedError: ErrRowWithoutKey,
+			expectedError: ErrRowWithoutPrimaryKey,
 		},
 		{
 			name: "should return the first key value on a Row with key",
@@ -232,7 +233,7 @@ func TestKeyForRow(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			value, err := keyForRow(testCase.row)
+			value, err := primaryKeyForRow(testCase.row)
 			if !errors.Is(err, testCase.expectedError) {
 				t.Errorf("expected to error with %s, got %s", testCase.expectedError, err)
 				return

@@ -1,6 +1,6 @@
 module github.com/gustapinto/go-sql-store
 
-go 1.23.3
+go 1.23.2
 
 require github.com/gustapinto/go-kv-store v1.3.1
 

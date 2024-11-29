@@ -201,7 +201,7 @@ func TestColumnIsKey(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			if value := ColumnIsKey(testCase.column); value != testCase.expectedValue {
+			if value := ColumnIsPrimaryKey(testCase.column); value != testCase.expectedValue {
 				t.Errorf("expected value %v, got %v", testCase.expectedValue, value)
 				return
 			}
