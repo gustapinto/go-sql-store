@@ -9,3 +9,6 @@ run:
 
 build:
 	go build -o ./bin/go-sql-store ./cmd/main.go
+
+fmt:
+	go fmt ./...
